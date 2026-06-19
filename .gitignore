@@ -1,0 +1,114 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+tf_env/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and local scratch
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# ---------------------------------------------------------------------------
+# SmartVision-AI (this project) — large / generated / downloaded files
+# ---------------------------------------------------------------------------
+
+# Note: Model weights are now included for Hugging Face deployment
+# Removed: runs/, yolov8n-cls.pt, yolov8s.pt
+
+notebooks-yolov8s.pt,
+
+yolov8*.pt
+
+# Trained Keras classifiers in models/
+models/*.h5
+
+# Sample inference images (if you add a gallery page / local exports)
+inference_outputs/
+
+# Common ML tooling artifacts (create if you use these tools)
+mlruns/
+wandb/
+*.tflite
+
+# Other common weight / export formats (add as needed)
+# *.onnx
+# *.pth

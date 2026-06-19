@@ -1,0 +1,36 @@
+# data - YOLOv8 Configuration (with splits)
+
+path: D:\VATHSAN\Gowtham\SmartVision_AI_System\data
+
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: person
+  1: bicycle
+  2: car
+  3: motorcycle
+  4: airplane
+  5: bus
+  6: truck
+  7: traffic light
+  8: stop sign
+  9: bench
+  10: bird
+  11: cat
+  12: dog
+  13: horse
+  14: cow
+  15: elephant
+  16: bottle
+  17: cup
+  18: bowl
+  19: pizza
+  20: cake
+  21: chair
+  22: couch
+  23: bed
+  24: potted plant
+
+nc: 25
