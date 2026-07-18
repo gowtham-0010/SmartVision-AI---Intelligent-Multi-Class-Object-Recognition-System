@@ -1,0 +1,11 @@
+{
+  "scores": {
+    "vgg16": 0.04827586168588051,
+    "resnet50": 0.6339767782580534,
+    "mobilenetv2": 0.13715596331520208,
+    "efficientnetb0": 0.9999999941126998
+  },
+  "recommended_model": "efficientnetb0",
+  "recommended_model_name": "EfficientNetB0",
+  "reasoning": "Weighted 70% test accuracy / 30% inference speed."
+}

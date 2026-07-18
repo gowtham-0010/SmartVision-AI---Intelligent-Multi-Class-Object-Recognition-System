@@ -1,0 +1,9 @@
+{
+  "map50": 0.4892600041307044,
+  "map50_95": 0.316405429592775,
+  "precision": 0.6027655394590896,
+  "recall": 0.46979755136976337,
+  "inference_ms_per_image": 5.947515747298564,
+  "fps_estimate": 168.1,
+  "weights_path": "/content/drive/MyDrive/SmartVisionAI/models/yolo_smartvision/weights/best.pt"
+}
