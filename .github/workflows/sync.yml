@@ -6,16 +6,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-to-hub:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision main:main
+      - name: Sync to Hugging Face Space
+        uses: huggingface/hub-sync@v0.1.0
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: Gowtham-0010/SmartVision
+          hf_token: ${{ secrets.HF_TOKEN }}
+          repo_type: space
+          # Exclude the heavy dataset directories from uploading to Spaces
+          exclude: "detection/images/* raw_data/*"
