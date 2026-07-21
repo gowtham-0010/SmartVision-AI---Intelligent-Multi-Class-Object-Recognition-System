@@ -25,29 +25,41 @@ CLASSIFIER_DISPLAY_NAMES = {
 @st.cache_resource(show_spinner="Loading classification models...")
 def load_all_classifiers():
     """Load every trained classifier .keras file that exists in models/.
-    Native .keras format loads the full model with compile=False to bypass
-    Keras 3 optimizer/loss deserialization errors during inference."""
+    Uses tf_keras (Keras 2 legacy engine) as a robust fallback for Keras 3 deserialization."""
     import tensorflow as tf
     import keras
     
+    # Legacy Keras 2 deserializer engine
+    try:
+        import tf_keras
+    except ImportError:
+        tf_keras = None
+
     models = {}
     for key in CLASSIFIER_KEYS:
         path = os.path.join(MODELS_DIR, f"{key}_best.keras")
         if os.path.exists(path):
+            # Attempt 1: Keras 3 native loader
             try:
-                # 1. Primary Keras 3 loader (bypasses optimizer & loss checks)
                 models[key] = keras.models.load_model(
                     path, 
                     compile=False, 
                     safe_mode=False
                 )
             except Exception:
-                # 2. Fallback to tf.keras loader
-                models[key] = tf.keras.models.load_model(
-                    path, 
-                    compile=False, 
-                    safe_mode=False
-                )
+                # Attempt 2: tf_keras legacy loader (fixes TypeError)
+                if tf_keras is not None:
+                    try:
+                        models[key] = tf_keras.models.load_model(path, compile=False)
+                    except Exception as e:
+                        print(f"Failed loading {key} with tf_keras: {e}")
+                else:
+                    # Attempt 3: Standard tf.keras compile=False
+                    try:
+                        models[key] = tf.keras.models.load_model(path, compile=False, safe_mode=False)
+                    except Exception as e:
+                        print(f"Failed loading {key}: {e}")
+
     return models
 
 
