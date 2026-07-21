@@ -14,27 +14,23 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Clean image/dataset/plot files before deployment
+      - name: Prepare Clean Deployment Package
         run: |
-          # 1. Delete raw dataset folders
+          # 1. Delete dataset folders and binary plots
           rm -rf detection raw_data classification
-
-          # 2. Delete all image and plot files inside models/ and outputs/
           find models/ outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
 
-          # 3. Strip old Git history inside the runner
+          # 2. Reset git index in runner
           rm -rf .git
-
-          # 4. Re-initialize a fresh Git repo
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 5. Stage remaining code and model weights (.pt files)
+          # 3. Stage remaining clean application files
           git add .
           git commit -m "Deploy clean app and model weights to Hugging Face Space"
 
-      - name: Force push fresh deployment to Hugging Face
+      - name: Force Push Clean Commit to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
