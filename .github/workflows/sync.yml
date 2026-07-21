@@ -12,24 +12,27 @@ jobs:
       - name: Checkout single commit
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # Pulls ONLY the current state, ignoring past history
+          fetch-depth: 1
 
-      - name: Wipe dataset folders and strip Git history
+      - name: Clean image/dataset/plot files before deployment
         run: |
-          # 1. Delete dataset directories physically
+          # 1. Delete raw dataset folders
           rm -rf detection raw_data classification
 
-          # 2. Delete the entire .git history folder inside the runner
+          # 2. Delete all image and plot files inside models/ and outputs/
+          find models/ outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
+
+          # 3. Strip old Git history inside the runner
           rm -rf .git
 
-          # 3. Initialize a brand-new Git repository on the fly
+          # 4. Re-initialize a fresh Git repo
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 4. Stage ONLY the remaining code and model files
+          # 5. Stage remaining code and model weights (.pt files)
           git add .
-          git commit -m "Deploy clean app and model files to Hugging Face Space"
+          git commit -m "Deploy clean app and model weights to Hugging Face Space"
 
       - name: Force push fresh deployment to Hugging Face
         env:
