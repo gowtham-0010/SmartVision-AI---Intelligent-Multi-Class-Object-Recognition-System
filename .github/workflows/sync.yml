@@ -9,26 +9,32 @@ jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout single commit
+      - name: Checkout repository with Git LFS
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          lfs: true  # <--- CRITICAL: Downloads the real .keras/.pt weight files instead of text pointers
 
       - name: Prepare Clean Deployment Package
         run: |
-          # 1. Delete dataset folders and binary plots
+          # Delete raw datasets and temporary plots
           rm -rf detection raw_data classification
-          find models/ outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
+          find outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
 
-          # 2. Reset git index in runner
+          # Reset git index in runner
           rm -rf .git
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 3. Stage remaining clean application files
+          # Track model weights with LFS
+          git lfs install
+          git lfs track "*.keras"
+          git lfs track "*.pt"
+
+          # Stage remaining files
           git add .
-          git commit -m "Deploy clean app and model weights to Hugging Face Space"
+          git commit -m "Deploy clean app and actual model weights to Hugging Face"
 
       - name: Force Push Clean Commit to Hugging Face
         env:
