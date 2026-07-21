@@ -1,5 +1,6 @@
 # Core deep learning
-tensorflow>=2.15.0
+tensorflow ==2.20.0
+keras>=3.0.0
 ultralytics>=8.1.0
 
 # Data handling
