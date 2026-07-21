@@ -25,15 +25,29 @@ CLASSIFIER_DISPLAY_NAMES = {
 @st.cache_resource(show_spinner="Loading classification models...")
 def load_all_classifiers():
     """Load every trained classifier .keras file that exists in models/.
-    Native .keras format loads the full model (architecture + regularizers +
-    weights) with no custom_objects needed. Skips models that haven't been
-    trained/saved yet, so the app still runs with partial results."""
+    Native .keras format loads the full model with compile=False to bypass
+    Keras 3 optimizer/loss deserialization errors during inference."""
     import tensorflow as tf
+    import keras
+    
     models = {}
     for key in CLASSIFIER_KEYS:
         path = os.path.join(MODELS_DIR, f"{key}_best.keras")
         if os.path.exists(path):
-            models[key] = tf.keras.models.load_model(path)
+            try:
+                # 1. Primary Keras 3 loader (bypasses optimizer & loss checks)
+                models[key] = keras.models.load_model(
+                    path, 
+                    compile=False, 
+                    safe_mode=False
+                )
+            except Exception:
+                # 2. Fallback to tf.keras loader
+                models[key] = tf.keras.models.load_model(
+                    path, 
+                    compile=False, 
+                    safe_mode=False
+                )
     return models
 
 
