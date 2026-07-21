@@ -11,27 +11,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
 
-      - name: Remove dataset files from Git index before pushing
+      - name: Prepare Clean Deployment Package
         run: |
+          # 1. Physically delete dataset folders from the temporary runner
+          rm -rf detection/images raw_data
+
+          # 2. Configure temporary git user
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Untrack dataset directories from Git's index
-          git rm -r --cached detection/images || true
-          git rm -r --cached raw_data || true
+          # 3. Create a brand new branch with ZERO history
+          git checkout --orphan hf-deploy
 
-          # Physically remove them from disk
-          rm -rf detection/images raw_data
+          # 4. Stage remaining files (.py scripts, models/, requirements.txt, etc.)
+          git add -A
 
-          # Commit the removal locally so Git history stays clean for HF
-          git commit -m "Remove dataset files for HF Spaces deployment" || true
+          # 5. Create a single clean commit
+          git commit -m "Deploy clean app and models to Hugging Face Space"
 
-      - name: Push to Hugging Face Space
+      - name: Force Push Clean Commit to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision main:main
+          # Force push ONLY the single clean commit to HF's main branch
+          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision hf-deploy:main
