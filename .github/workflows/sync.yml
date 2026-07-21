@@ -13,26 +13,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true  # <--- CRITICAL: Downloads the real .keras/.pt weight files instead of text pointers
+          lfs: true
 
       - name: Prepare Clean Deployment Package
         run: |
-          # Delete raw datasets and temporary plots
+          # 1. Remove raw training datasets
           rm -rf detection raw_data classification
-          find outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
 
-          # Reset git index in runner
+          # 2. Delete ALL image plots, confusion matrices, and cache files inside models/ and outputs/
+          find models/ outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
+
+          # 3. Reset git index inside the GitHub runner
           rm -rf .git
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Track model weights with LFS
+          # 4. Initialize LFS for .keras and .pt model weights
           git lfs install
           git lfs track "*.keras"
           git lfs track "*.pt"
 
-          # Stage remaining files
+          # 5. Stage clean application files
           git add .
           git commit -m "Deploy clean app and actual model weights to Hugging Face"
 
