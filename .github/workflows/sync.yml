@@ -15,16 +15,23 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Remove dataset folder before syncing
+      - name: Remove dataset files from Git index before pushing
         run: |
-          rm -rf detection/images
-          rm -rf raw_data
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Untrack dataset directories from Git's index
+          git rm -r --cached detection/images || true
+          git rm -r --cached raw_data || true
+
+          # Physically remove them from disk
+          rm -rf detection/images raw_data
+
+          # Commit the removal locally so Git history stays clean for HF
+          git commit -m "Remove dataset files for HF Spaces deployment" || true
 
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "Clean dataset images for space deployment" || true
-          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision main
+          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision main:main
