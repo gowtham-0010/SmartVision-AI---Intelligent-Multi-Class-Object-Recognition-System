@@ -9,30 +9,30 @@ jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout single commit
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # Pulls ONLY the current state, ignoring past history
 
-      - name: Prepare Clean Deployment Package
+      - name: Wipe dataset folders and strip Git history
         run: |
-          # 1. Physically delete dataset folders from the temporary runner
-          rm -rf detection/images raw_data
+          # 1. Delete dataset directories physically
+          rm -rf detection raw_data classification
 
-          # 2. Configure temporary git user
+          # 2. Delete the entire .git history folder inside the runner
+          rm -rf .git
+
+          # 3. Initialize a brand-new Git repository on the fly
+          git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 3. Create a brand new branch with ZERO history
-          git checkout --orphan hf-deploy
+          # 4. Stage ONLY the remaining code and model files
+          git add .
+          git commit -m "Deploy clean app and model files to Hugging Face Space"
 
-          # 4. Stage remaining files (.py scripts, models/, requirements.txt, etc.)
-          git add -A
-
-          # 5. Create a single clean commit
-          git commit -m "Deploy clean app and models to Hugging Face Space"
-
-      - name: Force Push Clean Commit to Hugging Face
+      - name: Force push fresh deployment to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Force push ONLY the single clean commit to HF's main branch
-          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision hf-deploy:main
+          git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision HEAD:main
