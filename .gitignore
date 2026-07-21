@@ -61,7 +61,8 @@ smartvision_dataset/
 raw_data/
 coco_annotations/
 *.zip
-
+/classification
+/detection
 # ---------------------------------------------------------------------------
 # Logs / temp files
 # ---------------------------------------------------------------------------
