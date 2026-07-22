@@ -14,23 +14,29 @@ jobs:
 
       - name: Prepare Clean Code Deployment
         run: |
-          # Delete heavy local datasets, outputs, and local model weights
-          rm -rf detection raw_data classification models/
+          # 1. Remove raw training datasets
+          rm -rf detection raw_data classification
+
+          # 2. Re-create models directory structure with placeholder so HF preserves the folder
+          mkdir -p models/yolo_smartvision/weights
+          touch models/.gitkeep
+          touch models/yolo_smartvision/weights/.gitkeep
+
+          # 3. Clean temporary images or plots
           find . -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
 
-          # Re-initialize git for clean code push
+          # 4. Re-initialize git for clean push
           rm -rf .git
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Stage code files only
+          # 5. Stage code and folder structure
           git add .
-          git commit -m "Sync Streamlit app code to Hugging Face"
+          git commit -m "Preserve models folder structure and sync code"
 
       - name: Push Code to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Push code changes without destroying Hugging Face's models folder
           git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision HEAD:main
