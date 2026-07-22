@@ -9,37 +9,28 @@ jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository with Git LFS
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
 
-      - name: Prepare Clean Deployment Package
+      - name: Prepare Clean Code Deployment
         run: |
-          # 1. Remove raw training datasets
-          rm -rf detection raw_data classification
+          # Delete heavy local datasets, outputs, and local model weights
+          rm -rf detection raw_data classification models/
+          find . -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
 
-          # 2. Delete ALL image plots, confusion matrices, and cache files inside models/ and outputs/
-          find models/ outputs/ -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.cache" \) -delete || true
-
-          # 3. Reset git index inside the GitHub runner
+          # Re-initialize git for clean code push
           rm -rf .git
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 4. Initialize LFS for .keras and .pt model weights
-          git lfs install
-          git lfs track "*.keras"
-          git lfs track "*.pt"
-
-          # 5. Stage clean application files
+          # Stage code files only
           git add .
-          git commit -m "Deploy clean app and actual model weights to Hugging Face"
+          git commit -m "Sync Streamlit app code to Hugging Face"
 
-      - name: Force Push Clean Commit to Hugging Face
+      - name: Push Code to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Push code changes without destroying Hugging Face's models folder
           git push --force https://Gowtham-0010:$HF_TOKEN@huggingface.co/spaces/Gowtham-0010/SmartVision HEAD:main
