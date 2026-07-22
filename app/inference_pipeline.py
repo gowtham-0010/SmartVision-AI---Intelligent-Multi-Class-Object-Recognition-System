@@ -7,7 +7,8 @@ End-to-end prediction pipeline used by the Streamlit app:
     user image -> YOLO detects all objects with bounding boxes
                -> NMS removes duplicate/overlapping detections
                -> confidence threshold filters weak detections
-               -> (optional) best CNN classifier re-verifies each crop
+               -> padded crop -> resize -> (optional) best CNN classifier
+                  re-verifies each crop
                -> annotated image + structured results returned
 
 This module has NO Streamlit dependency so it can also be unit-tested
@@ -20,8 +21,8 @@ import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import (
-    SELECTED_CLASSES, CLS_IMG_SIZE, CONFIDENCE_THRESHOLD, NMS_IOU_THRESHOLD,
-    MODELS_DIR,
+    CLS_IMG_SIZE, CONFIDENCE_THRESHOLD, NMS_IOU_THRESHOLD, CROP_PADDING_RATIO,
+    classifier_idx_to_display_name,
 )
 
 import numpy as np
@@ -48,9 +49,8 @@ class SmartVisionPipeline:
         if classifier_weights_path and os.path.exists(classifier_weights_path):
             import tensorflow as tf
             self.classifier = tf.keras.models.load_model(classifier_weights_path)
-            # Read the actual expected input size off the loaded model rather than
-            # assuming 224px - progressive-resizing fine-tuning may have produced
-            # a model with a 384px input instead.
+            # Read the actual expected input size off the loaded model rather
+            # than assuming a fixed value.
             self.classifier_input_size = self.classifier.input_shape[1]
 
     def detect(self, image: Image.Image, confidence=CONFIDENCE_THRESHOLD, iou=NMS_IOU_THRESHOLD):
@@ -80,11 +80,22 @@ class SmartVisionPipeline:
 
         return detections, round(elapsed_ms, 1)
 
-    def classify_crop(self, image: Image.Image, box, padding_ratio=0.08):
+    def classify_crop(self, image: Image.Image, box, padding_ratio=CROP_PADDING_RATIO):
         """Run the optional CNN classifier on a single YOLO-detected crop
         and return its own top-5 predictions, for verification/display.
-        Applies the same defensive padding used in notebook 12 before
-        resizing to the classifier's actual expected input size."""
+
+        Applies defensive padding around the box before resizing to the
+        classifier's actual expected input size.
+
+        IMPORTANT: prediction indices are decoded via
+        classifier_idx_to_display_name(), NOT SELECTED_CLASSES[idx] directly.
+        The classifier's output neurons are ordered alphabetically by folder
+        name (how tf.keras.utils.image_dataset_from_directory assigned them
+        during training), which is a different order from SELECTED_CLASSES'
+        hand-authored list. Indexing into SELECTED_CLASSES directly silently
+        mismaps every prediction (e.g. a correctly recognized "elephant"
+        would display as "bottle").
+        """
         if self.classifier is None:
             return None
 
@@ -107,7 +118,7 @@ class SmartVisionPipeline:
         preds = self.classifier.predict(arr, verbose=0)[0]
         top5_idx = np.argsort(preds)[::-1][:5]
         return [
-            {"class_name": SELECTED_CLASSES[i], "confidence": round(float(preds[i]), 4)}
+            {"class_name": classifier_idx_to_display_name(i), "confidence": round(float(preds[i]), 4)}
             for i in top5_idx
         ]
 
