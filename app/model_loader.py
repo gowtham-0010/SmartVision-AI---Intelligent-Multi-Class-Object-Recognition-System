@@ -21,47 +21,55 @@ CLASSIFIER_DISPLAY_NAMES = {
     "efficientnetb0": "EfficientNetB0",
 }
 
-
 @st.cache_resource(show_spinner="Loading classification models...")
 def load_all_classifiers():
-    """Load every trained classifier .keras file that exists in models/.
-    Uses tf_keras (Keras 2 legacy engine) as a robust fallback for Keras 3 deserialization."""
     import tensorflow as tf
     import keras
     
-    # Legacy Keras 2 deserializer engine
     try:
         import tf_keras
     except ImportError:
         tf_keras = None
 
     models = {}
+
+    # Print current working directory and target models path for debugging
+    abs_models_dir = os.path.abspath(MODELS_DIR)
+    st.info(f"🔍 Searching for models in: `{abs_models_dir}`")
+    
+    if os.path.exists(abs_models_dir):
+        existing_files = os.listdir(abs_models_dir)
+        st.write(f"📁 Files found in models folder: `{existing_files}`")
+    else:
+        st.error(f"❌ Directory does not exist: `{abs_models_dir}`")
+
     for key in CLASSIFIER_KEYS:
-        path = os.path.join(MODELS_DIR, f"{key}_best.keras")
+        expected_filename = f"{key}_best.keras"
+        path = os.path.join(abs_models_dir, expected_filename)
+        
         if os.path.exists(path):
-            # Attempt 1: Keras 3 native loader
+            st.write(f"⏳ Attempting to load `{expected_filename}`...")
             try:
-                models[key] = keras.models.load_model(
-                    path, 
-                    compile=False, 
-                    safe_mode=False
-                )
-            except Exception:
-                # Attempt 2: tf_keras legacy loader (fixes TypeError)
-                if tf_keras is not None:
+                models[key] = keras.models.load_model(path, compile=False, safe_mode=False)
+                st.success(f"✅ Successfully loaded `{expected_filename}`!")
+            except Exception as e1:
+                st.warning(f"Keras 3 failed for `{expected_filename}`: {e1}")
+                if tf_keras:
                     try:
                         models[key] = tf_keras.models.load_model(path, compile=False)
-                    except Exception as e:
-                        print(f"Failed loading {key} with tf_keras: {e}")
+                        st.success(f"✅ Successfully loaded `{expected_filename}` using tf_keras!")
+                    except Exception as e2:
+                        st.error(f"❌ tf_keras also failed for `{expected_filename}`: {e2}")
                 else:
-                    # Attempt 3: Standard tf.keras compile=False
                     try:
                         models[key] = tf.keras.models.load_model(path, compile=False, safe_mode=False)
-                    except Exception as e:
-                        print(f"Failed loading {key}: {e}")
+                        st.success(f"✅ Loaded `{expected_filename}` via tf.keras!")
+                    except Exception as e3:
+                        st.error(f"❌ tf.keras failed for `{expected_filename}`: {e3}")
+        else:
+            st.warning(f"⚠️ Could not find expected file `{expected_filename}` at `{path}`")
 
     return models
-
 
 @st.cache_resource(show_spinner="Loading YOLO detector...")
 def load_yolo_model():
