@@ -10,7 +10,7 @@ from PIL import Image
 import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config import SELECTED_CLASSES
+from config import classifier_idx_to_display_name
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model_loader import load_all_classifiers, CLASSIFIER_DISPLAY_NAMES
@@ -18,7 +18,11 @@ from inference_pipeline import load_classifier_preprocess
 
 st.set_page_config(page_title="Image Classification - SmartVision AI", layout="wide")
 st.title("Image classification")
-st.write("Upload a photo of a single object. Every trained model will predict its class independently.")
+st.write(
+    "Upload a photo of a single object, tightly cropped around it (this matches how "
+    "the models were trained - on individual cropped objects, not full scenes). "
+    "Every trained model will predict its class independently."
+)
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
@@ -46,9 +50,9 @@ if uploaded_file is not None:
 
             for tab, (key, model) in zip(tabs, models.items()):
                 with tab:
-                    # Each model may expect a different input size (224px if it
-                    # only completed Stage 1, or 384px after the progressive-
-                    # resizing Stage 2 fine-tune) - resize per-model accordingly.
+                    # Each model may expect a different input size - resize
+                    # per-model based on what it actually expects rather than
+                    # assuming a fixed value.
                     input_size = model.input_shape[1]
                     resized = image.resize((input_size, input_size))
                     arr = np.expand_dims(np.array(resized).astype("float32"), axis=0)
@@ -58,10 +62,19 @@ if uploaded_file is not None:
                     preds = model.predict(model_input, verbose=0)[0]
                     top5_idx = np.argsort(preds)[::-1][:5]
 
-                    all_top1[key] = (SELECTED_CLASSES[top5_idx[0]], float(preds[top5_idx[0]]))
+                    # IMPORTANT: decode indices via classifier_idx_to_display_name(),
+                    # NOT SELECTED_CLASSES[idx] directly. The classifier's output
+                    # neurons are ordered alphabetically by folder name (how
+                    # tf.keras.utils.image_dataset_from_directory assigned them
+                    # during training) - a different order from SELECTED_CLASSES'
+                    # hand-authored list. Using SELECTED_CLASSES[idx] here would
+                    # silently mismap every prediction.
+                    top1_name = classifier_idx_to_display_name(top5_idx[0])
+                    all_top1[key] = (top1_name, float(preds[top5_idx[0]]))
 
                     for rank, idx in enumerate(top5_idx, start=1):
-                        st.write(f"{rank}. **{SELECTED_CLASSES[idx]}** - {preds[idx]*100:.1f}%")
+                        class_display_name = classifier_idx_to_display_name(idx)
+                        st.write(f"{rank}. **{class_display_name}** - {preds[idx]*100:.1f}%")
                         st.progress(float(preds[idx]))
 
             st.divider()
