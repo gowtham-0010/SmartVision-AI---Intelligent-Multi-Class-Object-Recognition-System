@@ -21,27 +21,21 @@ CLASSIFIER_DISPLAY_NAMES = {
     "efficientnetb0": "EfficientNetB0",
 }
 
+
 @st.cache_resource(show_spinner="Loading classification models...")
 def load_all_classifiers():
-    """Load trained classifier .keras files with Keras 3.13.2."""
-    import keras
-    
+    """Load every trained classifier .keras file that exists in models/.
+    Native .keras format loads the full model (architecture + regularizers +
+    weights) with no custom_objects needed. Skips models that haven't been
+    trained/saved yet, so the app still runs with partial results."""
+    import tensorflow as tf
     models = {}
     for key in CLASSIFIER_KEYS:
-        expected_filename = f"{key}_best.keras"
-        path = os.path.join(MODELS_DIR, expected_filename)
-        
+        path = os.path.join(MODELS_DIR, f"{key}_best.keras")
         if os.path.exists(path):
-            try:
-                models[key] = keras.models.load_model(
-                    path, 
-                    compile=False, 
-                    safe_mode=False
-                )
-            except Exception as e:
-                print(f"Error loading {expected_filename}: {e}")
-
+            models[key] = tf.keras.models.load_model(path)
     return models
+
 
 @st.cache_resource(show_spinner="Loading YOLO detector...")
 def load_yolo_model():
@@ -58,10 +52,16 @@ def load_yolo_model():
 
 @st.cache_data
 def load_classification_metrics():
-    if os.path.exists(METRICS_PATH):
-        with open(METRICS_PATH) as f:
-            return json.load(f)
-    return {}
+    """Loads outputs/metrics_<key>.json for every classifier that has one,
+    keyed by model key (vgg16, resnet50, mobilenetv2, efficientnetb0)."""
+    metrics = {}
+    outputs_dir = os.path.dirname(METRICS_PATH)
+    for key in CLASSIFIER_KEYS:
+        path = os.path.join(outputs_dir, f"metrics_{key}.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                metrics[key] = json.load(f)
+    return metrics
 
 
 @st.cache_data
